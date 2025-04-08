@@ -156,57 +156,6 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Chart -->
-            <div class="mt-8">
-                <h2 class="text-xl font-semibold mb-4 text-secondary">Jahresvergleich (12 Monate)</h2>
-                <div class="bg-white p-4 rounded-lg border border-medium-blue h-64 flex items-end gap-x-4">
-                    <div 
-                        v-for="(bar, index) in chartData" 
-                        :key="index"
-                        class="flex-1 flex flex-col items-center max-w-[45%]"
-                    >
-                        <div 
-                            class="w-full rounded-t-sm hover:opacity-90 transition-opacity"
-                            :class="bar.color"
-                            :style="{ height: bar.height + '%' }"
-                        >
-                            <div class="text-white text-center text-xs font-bold mt-1">
-                                {{ bar.valueText }}
-                            </div>
-                        </div>
-                        <p class="text-xs text-secondary mt-1 text-center">{{ bar.label }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Monthly Cost Breakdown -->
-            <div class="mt-8">
-                <h2 class="text-xl font-semibold mb-4 text-secondary">Monatliche Kostenaufstellung</h2>
-                <div class="bg-white rounded-lg border border-medium-blue overflow-hidden">
-                    <table class="min-w-full divide-y divide-medium-blue">
-                        <thead class="bg-light-blue">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Monat</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Manuelle Kosten</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Unsere Lösung</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">Kumulierte Ersparnis</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-medium-blue">
-                            <tr v-for="month in 12" :key="month">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-secondary">{{ month }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-secondary">{{ formatCurrency(manualTotal) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-secondary">{{ formatCurrency(month === 1 ? firstMonthCost : followingMonthsCost) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" 
-                                    :class="cumulativeSavings(month) >= 0 ? 'text-primary' : 'text-accent'">
-                                    {{ formatCurrency(cumulativeSavings(month)) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 

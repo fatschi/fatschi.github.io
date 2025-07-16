@@ -194,6 +194,38 @@
               </h3>
               <div class="bg-input-bg p-4 rounded-lg border border-medium-blue">
                 <div class="space-y-6">
+                  <!-- Number of municipalities slider -->
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <label
+                        for="municipalityCount"
+                        class="block text-sm font-medium text-secondary"
+                      >
+                        Anzahl Kommunen/Landkreise:
+                        <span class="font-bold text-dark-blue"
+                          >{{ municipalityCount }}</span
+                        >
+                      </label>
+                    </div>
+                    <input
+                      id="municipalityCount"
+                      type="range"
+                      v-model.number="municipalityCount"
+                      min="1"
+                      max="50"
+                      step="1"
+                      class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
+                    />
+                    <div class="flex justify-between text-xs text-secondary">
+                      <span>1</span>
+                      <span>10</span>
+                      <span>20</span>
+                      <span>30</span>
+                      <span>40</span>
+                      <span>50</span>
+                    </div>
+                  </div>
+
                   <!-- Setup fee slider -->
                   <div class="space-y-2">
                     <div class="flex justify-between">
@@ -201,7 +233,7 @@
                         for="setupFee"
                         class="block text-sm font-medium text-secondary"
                       >
-                        Einrichtungsgebühr (an enmeshed):
+                        Einrichtungsgebühr pro Kommune (an enmeshed):
                         <span class="font-bold text-dark-blue"
                           >{{ formatCurrency(setupFee) }}</span
                         >
@@ -212,15 +244,15 @@
                       type="range"
                       v-model.number="setupFee"
                       min="1500"
-                      max="15000"
+                      max="10000"
                       step="100"
                       class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
                     />
                     <div class="flex justify-between text-xs text-secondary">
                       <span>€1.500</span>
-                      <span>€5.000</span>
+                      <span>€3.000</span>
+                      <span>€6.000</span>
                       <span>€10.000</span>
-                      <span>€15.000</span>
                     </div>
                   </div>
 
@@ -231,7 +263,7 @@
                         for="monthlyFee"
                         class="block text-sm font-medium text-secondary"
                       >
-                        Monatliche Fixkosten (an enmeshed):
+                        Monatliche Fixkosten pro Kommune (an enmeshed):
                         <span class="font-bold text-dark-blue"
                           >{{ formatCurrency(monthlyFee) }}</span
                         >
@@ -242,15 +274,16 @@
                       type="range"
                       v-model.number="monthlyFee"
                       min="0"
-                      max="4500"
+                      max="2000"
                       step="50"
                       class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
                     />
                     <div class="flex justify-between text-xs text-secondary">
                       <span>€0</span>
+                      <span>€500</span>
                       <span>€1.000</span>
-                      <span>€2.500</span>
-                      <span>€4.500</span>
+                      <span>€1.500</span>
+                      <span>€2.000</span>
                     </div>
                   </div>
                 </div>
@@ -343,8 +376,8 @@
               <span class="text-xl text-secondary">im ersten Jahr</span>
             </p>
             <p class="text-primary mt-1">
-              Ab dem zweiten Jahr: {{ formatCurrency(savingsYearly + setupFee)
-              }} pro Jahr!
+              Ab dem zweiten Jahr: {{ formatCurrency(savingsYearly +
+              totalSetupCost) }} pro Jahr!
             </p>
 
             <div class="mt-4 pt-4 border-t border-light-orange">
@@ -381,8 +414,9 @@
           const sliderValue = ref(3333.33);
           const payrollCount = ref(1000);
           const manualCost = ref(25.0); // Default value changed to 25€
-          const setupFee = ref(2500);
-          const monthlyFee = ref(500);
+          const municipalityCount = ref(10); // New slider for number of municipalities
+          const setupFee = ref(2500); // Now per municipality
+          const monthlyFee = ref(500); // Now per municipality
           const solutionCostPerDocument = ref(2.5); // Default value changed to 2.5€
 
           // Convert slider position (0-100) to exponential value (10-100,000)
@@ -401,6 +435,15 @@
             return new Intl.NumberFormat("de-DE").format(payrollCount.value);
           });
 
+          // Calculate total setup and monthly costs
+          const totalSetupCost = computed(() => {
+            return setupFee.value * municipalityCount.value;
+          });
+
+          const totalMonthlyFee = computed(() => {
+            return monthlyFee.value * municipalityCount.value;
+          });
+
           // Calculations
           const manualTotal = computed(() => {
             return (payrollCount.value * manualCost.value) / 12; // Divided by 12 to get monthly cost from yearly
@@ -412,31 +455,31 @@
 
           const firstMonthCost = computed(() => {
             return (
-              setupFee.value +
-              monthlyFee.value +
+              totalSetupCost.value +
+              totalMonthlyFee.value +
               (payrollCount.value * solutionCostPerDocument.value) / 12
             );
           });
 
           const followingMonthsCost = computed(() => {
             return (
-              monthlyFee.value +
+              totalMonthlyFee.value +
               (payrollCount.value * solutionCostPerDocument.value) / 12
             );
           });
 
           const solutionTotalMonthly = computed(() => {
             return (
-              setupFee.value / 12 +
-              monthlyFee.value +
+              totalSetupCost.value / 12 +
+              totalMonthlyFee.value +
               (payrollCount.value * solutionCostPerDocument.value) / 12
             );
           });
 
           const solutionTotalYearly = computed(() => {
             return (
-              setupFee.value +
-              monthlyFee.value * 12 +
+              totalSetupCost.value +
+              totalMonthlyFee.value * 12 +
               payrollCount.value * solutionCostPerDocument.value
             );
           });
@@ -448,10 +491,10 @@
           const amortizationPeriod = computed(() => {
             const monthlySavings =
               manualTotal.value -
-              (monthlyFee.value +
+              (totalMonthlyFee.value +
                 (payrollCount.value * solutionCostPerDocument.value) / 12);
             if (monthlySavings <= 0) return ">12";
-            return Math.ceil(setupFee.value / monthlySavings);
+            return Math.ceil(totalSetupCost.value / monthlySavings);
           });
 
           const savingsPercentage = computed(() => {
@@ -464,8 +507,8 @@
           const cumulativeSavings = (months) => {
             const manual = manualTotal.value * months;
             const solution =
-              setupFee.value +
-              monthlyFee.value * months +
+              totalSetupCost.value +
+              totalMonthlyFee.value * months +
               (payrollCount.value * solutionCostPerDocument.value * months) /
                 12;
             return manual - solution;
@@ -542,9 +585,12 @@
             payrollCount,
             formattedPayrollCount,
             manualCost,
+            municipalityCount,
             setupFee,
             monthlyFee,
             solutionCostPerDocument,
+            totalSetupCost,
+            totalMonthlyFee,
             manualTotal,
             manualTotalYearly,
             firstMonthCost,

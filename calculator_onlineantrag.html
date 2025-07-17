@@ -317,10 +317,10 @@
                     />
                     <div class="flex justify-between text-xs text-secondary">
                       <span>€0.00</span>
-                      <span>€2.50</span>
-                      <span>€5.00</span>
-                      <span>€7.50</span>
-                      <span>€10.00</span>
+                      <span>€2,50</span>
+                      <span>€5,00</span>
+                      <span>€7,50</span>
+                      <span>€10,00</span>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">
                       * Diese Kosten verbleiben für manuell bestehende Aufwände
@@ -449,9 +449,7 @@
           });
 
           const manualTotalYearly = computed(() => {
-            return (
-              payrollCount.value * manualCost.value * municipalityCount.value
-            ); // Total yearly cost for all municipalities
+            return payrollCount.value * manualCost.value; // Total yearly cost for all municipalities
           });
 
           const firstMonthCost = computed(() => {

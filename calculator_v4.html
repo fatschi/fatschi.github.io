@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payroll Einsparungsrechner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#007BBD",
+              secondary: "#183248",
+              text: "#1A1A1A",
+              accent: "#C7620D",
+              "light-blue": "#D7E3F2",
+              "medium-blue": "#85AED8",
+              "dark-blue": "#156194",
+              "darker-blue": "#19496D",
+              "darkest-blue": "#121C27",
+              "light-orange": "#FFE5D0",
+              "medium-orange": "#FFCBA2",
+              "dark-orange": "#C7620D",
+              "input-bg": "#F5F7FA",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body class="bg-light-blue min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-8">
+      <div
+        class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6"
+      >
+        <h1 class="text-3xl font-bold text-center text-primary mb-6">
+          Payroll Einsparungsrechner
+        </h1>
+
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-secondary mb-4">
+            Kosten für postalischen Payroll Prozess
+          </h3>
+          <div class="grid grid-cols-1 gap-6">
+            <!-- Employee count slider with logarithmic scaling (1-100,000) -->
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <label
+                  for="employeeCount"
+                  class="block text-sm font-medium text-secondary"
+                >
+                  Anzahl der Mitarbeiter:
+                  <span class="font-bold text-dark-orange"
+                    >{{ formattedEmployeeCount }}</span
+                  >
+                </label>
+              </div>
+              <input
+                id="employeeCount"
+                type="range"
+                v-model.number="sliderValue"
+                min="0"
+                max="10000"
+                class="w-full h-2 bg-medium-orange rounded-lg appearance-none cursor-pointer accent-accent"
+                @input="updateEmployeeCount"
+              />
+              <div class="flex justify-between text-xs text-secondary">
+                <span>100</span>
+                <span>1.000</span>
+                <span>10.000</span>
+                <span>100.000</span>
+              </div>
+            </div>
+
+            <!-- Manual cost per document slider -->
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <label
+                  for="manualCost"
+                  class="block text-sm font-medium text-secondary"
+                >
+                  Kosten pro gedrucktem Dokument:
+                  <span class="font-bold text-dark-orange"
+                    >{{ formatCurrency(manualCost) }}</span
+                  >
+                </label>
+                <button
+                  @click="showCostBreakdown = !showCostBreakdown"
+                  class="text-xs text-primary hover:underline"
+                >
+                  Wie setzt sich das zusammen?
+                </button>
+              </div>
+              <input
+                id="manualCost"
+                type="range"
+                v-model.number="manualCost"
+                min="1"
+                max="15"
+                step="0.01"
+                class="w-full h-2 bg-medium-orange rounded-lg appearance-none cursor-pointer accent-accent"
+              />
+              <div class="flex justify-between text-xs text-secondary">
+                <span>€1.00</span>
+                <span>€5.00</span>
+                <span>€9.00</span>
+                <span>€12.00</span>
+                <span>€15.00</span>
+              </div>
+
+              <!-- Cost breakdown info box -->
+              <div
+                v-if="showCostBreakdown"
+                class="mt-3 p-3 bg-input-bg rounded-lg text-sm text-secondary border border-medium-blue"
+              >
+                <h4 class="font-medium mb-2">
+                  Kostenaufschlüsselung pro Dokument:
+                </h4>
+                <ul class="space-y-3">
+                  <li class="flex items-center gap-3">
+                    <span class="w-1/3">Druck und Kuvertierung:</span>
+                    <input
+                      type="number"
+                      v-model.number="costBreakdown.printing"
+                      @input="updateManualCostFromBreakdown"
+                      step="0.01"
+                      class="w-1/3 px-2 py-1 border border-medium-blue rounded"
+                    />
+                    <span class="w-1/3 text-right"
+                      >{{ calculatePercentage(costBreakdown.printing) }}%</span
+                    >
+                  </li>
+                  <li class="flex items-center gap-3">
+                    <span class="w-1/3">Briefporto:</span>
+                    <input
+                      type="number"
+                      v-model.number="costBreakdown.postage"
+                      @input="updateManualCostFromBreakdown"
+                      step="0.01"
+                      class="w-1/3 px-2 py-1 border border-medium-blue rounded"
+                    />
+                    <span class="w-1/3 text-right"
+                      >{{ calculatePercentage(costBreakdown.postage) }}%</span
+                    >
+                  </li>
+                  <li class="flex items-center gap-3">
+                    <span class="w-1/3">Verwaltung/Handling:</span>
+                    <input
+                      type="number"
+                      v-model.number="costBreakdown.administration"
+                      @input="updateManualCostFromBreakdown"
+                      step="0.01"
+                      class="w-1/3 px-2 py-1 border border-medium-blue rounded"
+                    />
+                    <span class="w-1/3 text-right"
+                      >{{ calculatePercentage(costBreakdown.administration)
+                      }}%</span
+                    >
+                  </li>
+                  <li class="flex items-center gap-3">
+                    <span class="w-1/3">Sonstiges:</span>
+                    <input
+                      type="number"
+                      v-model.number="costBreakdown.other"
+                      @input="updateManualCostFromBreakdown"
+                      step="0.01"
+                      class="w-1/3 px-2 py-1 border border-medium-blue rounded"
+                    />
+                    <span class="w-1/3 text-right"
+                      >{{ calculatePercentage(costBreakdown.other) }}%</span
+                    >
+                  </li>
+                  <li
+                    class="flex items-center gap-3 pt-2 border-t border-medium-blue"
+                  >
+                    <span class="w-1/3 font-medium">Gesamt:</span>
+                    <span class="w-1/3 font-medium"
+                      >{{ formatCurrency(totalBreakdownCost) }}</span
+                    >
+                    <span class="w-1/3 text-right font-medium">100%</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- enmeshed costs section -->
+            <div>
+              <h3 class="text-lg font-semibold text-secondary mb-4">
+                Kosten für enmeshed
+              </h3>
+              <div class="bg-input-bg p-4 rounded-lg border border-medium-blue">
+                <div class="space-y-6">
+                  <!-- Setup fee slider -->
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <label
+                        for="setupFee"
+                        class="block text-sm font-medium text-secondary"
+                      >
+                        Einrichtungsgebühr:
+                        <span class="font-bold text-dark-blue"
+                          >{{ formatCurrency(setupFee) }}</span
+                        >
+                      </label>
+                    </div>
+                    <input
+                      id="setupFee"
+                      type="range"
+                      v-model.number="setupFee"
+                      min="1500"
+                      max="15000"
+                      step="100"
+                      class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
+                    />
+                    <div class="flex justify-between text-xs text-secondary">
+                      <span>€1.500</span>
+                      <span>€5.000</span>
+                      <span>€10.000</span>
+                      <span>€15.000</span>
+                    </div>
+                  </div>
+
+                  <!-- Monthly fee slider -->
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <label
+                        for="monthlyFee"
+                        class="block text-sm font-medium text-secondary"
+                      >
+                        Monatliche Fixkosten:
+                        <span class="font-bold text-dark-blue"
+                          >{{ formatCurrency(monthlyFee) }}</span
+                        >
+                        <span class="text-xs text-secondary"
+                          >(inkl. 15 Dokumente pro Mitarbeiter und Jahr)</span
+                        >
+                      </label>
+                    </div>
+                    <input
+                      id="monthlyFee"
+                      type="range"
+                      v-model.number="monthlyFee"
+                      min="0"
+                      max="4500"
+                      step="50"
+                      class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
+                    />
+                    <div class="flex justify-between text-xs text-secondary">
+                      <span>€0</span>
+                      <span>€1.000</span>
+                      <span>€2.500</span>
+                      <span>€4.500</span>
+                    </div>
+                  </div>
+
+                  <!-- Additional documents per employee slider -->
+                  <div class="space-y-2">
+                    <div class="flex justify-between">
+                      <label
+                        for="additionalDocuments"
+                        class="block text-sm font-medium text-secondary"
+                      >
+                        Zusätzliche Dokumente pro Mitarbeiter und Jahr:
+                        <span class="font-bold text-dark-blue"
+                          >{{ additionalDocuments }}</span
+                        >
+                      </label>
+                      <button
+                        @click="showDocumentOptions = !showDocumentOptions"
+                        class="text-xs text-primary hover:underline"
+                      >
+                        Möchten Sie weitere Dokumente versenden?
+                      </button>
+                    </div>
+                    <div v-if="showDocumentOptions">
+                      <input
+                        id="additionalDocuments"
+                        type="range"
+                        v-model.number="additionalDocuments"
+                        min="0"
+                        max="50"
+                        class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
+                      />
+                      <div class="flex justify-between text-xs text-secondary">
+                        <span>0</span>
+                        <span>10</span>
+                        <span>25</span>
+                        <span>50</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Cost per additional document slider -->
+                  <div class="space-y-2" v-if="showDocumentOptions">
+                    <div class="flex justify-between">
+                      <label
+                        for="solutionCostPerDocument"
+                        class="block text-sm font-medium text-secondary"
+                      >
+                        Kosten pro zusätzlichem Dokument:
+                        <span class="font-bold text-dark-blue"
+                          >{{ formatCurrency(solutionCostPerDocument) }}</span
+                        >
+                      </label>
+                    </div>
+                    <input
+                      id="solutionCostPerDocument"
+                      type="range"
+                      v-model.number="solutionCostPerDocument"
+                      min="0"
+                      max="3"
+                      step="0.25"
+                      class="w-full h-2 bg-medium-blue rounded-lg appearance-none cursor-pointer accent-dark-blue"
+                    />
+                    <div class="flex justify-between text-xs text-secondary">
+                      <span>€0.00</span>
+                      <span>€1.50</span>
+                      <span>€3.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="bg-light-blue p-6 rounded-lg border border-medium-blue">
+          <h2 class="text-xl font-semibold mb-4 text-secondary">Ergebnisse</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Manual Costs -->
+            <div class="bg-white p-4 rounded-lg border border-medium-blue">
+              <h3 class="font-medium text-secondary mb-2">
+                Manuelle Kosten (12 Monate)
+              </h3>
+              <p class="text-3xl font-bold text-accent">
+                {{ formatCurrency(manualTotalYearly) }}
+              </p>
+              <p class="text-sm text-secondary mt-1">
+                {{ formatCurrency(manualTotalMonthly) }} pro Monat
+              </p>
+            </div>
+
+            <!-- Your Solution Costs -->
+            <div class="bg-white p-4 rounded-lg border border-medium-blue">
+              <h3 class="font-medium text-secondary mb-2">
+                Kosten mit enmeshed (12 Monate)
+              </h3>
+              <p class="text-3xl font-bold text-primary">
+                {{ formatCurrency(solutionTotalYearly) }}
+              </p>
+              <p class="text-sm text-secondary mt-1">
+                {{ formatCurrency(solutionTotalMonthly) }} pro Monat (inkl.
+                Einrichtung)
+              </p>
+              <div class="text-xs text-secondary mt-2">
+                <p>Einrichtung: {{ formatCurrency(setupFee) }}</p>
+                <p>Monatliche Kosten: {{ formatCurrency(monthlyFee * 12) }}</p>
+                <p>
+                  Zusätzliche Dokumente: {{
+                  formatCurrency(additionalDocumentsCost) }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Savings -->
+          <div class="bg-white p-4 rounded-lg border border-accent">
+            <h3 class="font-medium text-secondary mb-2">Ihre Einsparungen</h3>
+            <p class="text-3xl font-bold text-primary">
+              {{ formatCurrency(savingsYearly) }}
+              <span class="text-xl text-secondary">im ersten Jahr</span>
+            </p>
+            <p class="text-primary mt-1">
+              Ab dem zweiten Jahr: {{ formatCurrency(savingsYearly + setupFee)
+              }} pro Jahr!
+            </p>
+
+            <div class="mt-4 pt-4 border-t border-light-orange">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-secondary font-medium">
+                    Amortisationszeit:
+                  </p>
+                  <p class="text-lg font-bold text-primary">
+                    {{ amortizationPeriod }} Monate
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-secondary font-medium">
+                    Kostenreduktion:
+                  </p>
+                  <p class="text-lg font-bold text-primary">
+                    {{ savingsPercentage }}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, computed, watch } = Vue;
+
+      createApp({
+        setup() {
+          // State - Adjusted for 100,000 max with 1,000 as default
+          const sliderValue = ref(3333.33); // Adjusted default position for ~1,000 employees
+          const employeeCount = ref(1000);
+          const additionalDocuments = ref(0);
+          const manualCost = ref(5.0);
+          const setupFee = ref(2500);
+          const monthlyFee = ref(500);
+          const solutionCostPerDocument = ref(0.25);
+          const showCostBreakdown = ref(false);
+          const showDocumentOptions = ref(false);
+
+          // Convert slider position (0-10000) to exponential value (1-100,000)
+          const updateEmployeeCount = () => {
+            const minValue = 100;
+            const maxValue = 100000;
+            // Exponential scaling
+            const scale = Math.pow(maxValue / minValue, 1 / 10000);
+            employeeCount.value = Math.round(
+              minValue * Math.pow(scale, sliderValue.value)
+            );
+          };
+
+          // Format employee count with thousands separator
+          const formattedEmployeeCount = computed(() => {
+            return new Intl.NumberFormat("de-DE").format(employeeCount.value);
+          });
+
+          // Calculations
+          const totalDocumentsPerYear = computed(() => {
+            return employeeCount.value * 12;
+          });
+
+          const manualTotalMonthly = computed(() => {
+            return (totalDocumentsPerYear.value * manualCost.value) / 12;
+          });
+
+          const manualTotalYearly = computed(() => {
+            return totalDocumentsPerYear.value * manualCost.value;
+          });
+
+          const additionalDocumentsCost = computed(() => {
+            const totalDocuments =
+              employeeCount.value * additionalDocuments.value;
+            const extraDocuments = Math.max(0, totalDocuments);
+            return extraDocuments * solutionCostPerDocument.value;
+          });
+
+          const solutionTotalMonthly = computed(() => {
+            return (
+              setupFee.value / 12 +
+              monthlyFee.value +
+              additionalDocumentsCost.value / 12
+            );
+          });
+
+          const solutionTotalYearly = computed(() => {
+            return (
+              setupFee.value +
+              monthlyFee.value * 12 +
+              additionalDocumentsCost.value
+            );
+          });
+
+          const savingsYearly = computed(() => {
+            return manualTotalYearly.value - solutionTotalYearly.value;
+          });
+
+          const amortizationPeriod = computed(() => {
+            const monthlySavings =
+              manualTotalMonthly.value -
+              (monthlyFee.value + additionalDocumentsCost.value / 12);
+            if (monthlySavings <= 0) return ">12";
+            return Math.ceil(setupFee.value / monthlySavings);
+          });
+
+          const savingsPercentage = computed(() => {
+            if (manualTotalYearly.value === 0) return 0;
+            return Math.round(
+              (savingsYearly.value / manualTotalYearly.value) * 100
+            );
+          });
+
+          // Formatting function
+          const formatCurrency = (value) => {
+            return new Intl.NumberFormat("de-DE", {
+              style: "currency",
+              currency: "EUR",
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }).format(value);
+          };
+
+          // Cost breakdown state
+          const costBreakdown = ref({
+            printing: 1.0,
+            postage: 1.0,
+            administration: 1,
+            other: 1,
+          });
+
+          // Calculate total from breakdown
+          const totalBreakdownCost = computed(() => {
+            return Object.values(costBreakdown.value).reduce(
+              (sum, val) => sum + val,
+              0
+            );
+          });
+
+          // Update manual cost when breakdown changes
+          const updateManualCostFromBreakdown = () => {
+            manualCost.value = totalBreakdownCost.value;
+          };
+
+          // Update breakdown when slider changes
+          const updateBreakdownFromManualCost = () => {
+            const total = manualCost.value;
+            // Keep proportions but adjust to new total
+            const currentTotal = totalBreakdownCost.value;
+            if (currentTotal > 0) {
+              const factor = total / currentTotal;
+              for (const key in costBreakdown.value) {
+                costBreakdown.value[key] = parseFloat(
+                  (costBreakdown.value[key] * factor).toFixed(2)
+                );
+              }
+            }
+          };
+
+          // Calculate percentage for each component
+          const calculatePercentage = (value) => {
+            if (manualCost.value === 0) return 0;
+            return Math.round((value / manualCost.value) * 100);
+          };
+
+          // Watch manualCost to update breakdown
+          watch(manualCost, () => {
+            updateBreakdownFromManualCost();
+          });
+
+          // Initialize
+          updateEmployeeCount();
+
+          return {
+            sliderValue,
+            employeeCount,
+            formattedEmployeeCount,
+            additionalDocuments,
+            manualCost,
+            setupFee,
+            monthlyFee,
+            solutionCostPerDocument,
+            showCostBreakdown,
+            showDocumentOptions,
+            updateEmployeeCount,
+            manualTotalMonthly,
+            manualTotalYearly,
+            solutionTotalMonthly,
+            solutionTotalYearly,
+            additionalDocumentsCost,
+            savingsYearly,
+            amortizationPeriod,
+            savingsPercentage,
+            formatCurrency,
+            costBreakdown,
+            totalBreakdownCost,
+            updateManualCostFromBreakdown,
+            calculatePercentage,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>

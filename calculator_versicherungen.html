@@ -42,7 +42,7 @@
             Kosten für postalischen Prozess
           </h3>
           <div class="grid grid-cols-1 gap-6">
-            <!-- Document count slider starting at 0 -->
+            <!-- Document count slider 0..10,000 -->
             <div class="space-y-2">
               <div class="flex justify-between">
                 <label for="employeeCount" class="block text-sm font-medium text-secondary">
@@ -61,9 +61,10 @@
               />
               <div class="flex justify-between text-xs text-secondary">
                 <span>0</span>
-                <span>1.000</span>
+                <span>2.500</span>
+                <span>5.000</span>
+                <span>7.500</span>
                 <span>10.000</span>
-                <span>100.000</span>
               </div>
             </div>
 
@@ -194,7 +195,6 @@
                       <label for="monthlyFee" class="block text-sm font-medium text-secondary">
                         Monatliche Fixkosten:
                         <span class="font-bold text-dark-blue">{{ formatCurrency(monthlyFee) }}</span>
-                        <span class="text-xs text-secondary"></span>
                       </label>
                     </div>
                     <input
@@ -280,7 +280,6 @@
           <h2 class="text-xl font-semibold mb-4 text-secondary">Ergebnisse</h2>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <!-- Manual Costs -->
             <div class="bg-white p-4 rounded-lg border border-medium-blue">
               <h3 class="font-medium text-secondary mb-2">Manuelle Kosten (12 Monate)</h3>
               <p class="text-3xl font-bold text-accent">
@@ -291,7 +290,6 @@
               </p>
             </div>
 
-            <!-- Solution Costs -->
             <div class="bg-white p-4 rounded-lg border border-medium-blue">
               <h3 class="font-medium text-secondary mb-2">Kosten mit enmeshed (12 Monate)</h3>
               <p class="text-3xl font-bold text-primary">
@@ -308,7 +306,6 @@
             </div>
           </div>
 
-          <!-- Savings -->
           <div class="bg-white p-4 rounded-lg border border-accent">
             <h3 class="font-medium text-secondary mb-2">Ihre Einsparungen</h3>
             <p class="text-3xl font-bold text-primary">
@@ -343,9 +340,9 @@
       createApp({
         setup() {
           // State
-          const sliderValue = ref(100);     // 0..10000 -> 0..100000 Doks
-          const employeeCount = ref(1000);  // jetzt: "Anzahl gedruckter Dokumente"
-          const additionalDocuments = ref(0); // absolute Anzahl pro Jahr
+          const sliderValue = ref(1000);      // 0..10000
+          const employeeCount = ref(1000);    // 1:1 zum Slider
+          const additionalDocuments = ref(0);
           const manualCost = ref(5.0);
           const setupFee = ref(2500);
           const monthlyFee = ref(500);
@@ -353,9 +350,9 @@
           const showCostBreakdown = ref(false);
           const showDocumentOptions = ref(false);
 
-          // Linear mapping: 0..10000 -> 0..100000
+          // Linear mapping: 0..10,000 -> 0..10,000
           const updateEmployeeCount = () => {
-            employeeCount.value = Math.round(sliderValue.value * 10);
+            employeeCount.value = Math.round(sliderValue.value);
           };
 
           const formattedEmployeeCount = computed(() => {
@@ -375,7 +372,6 @@
             return totalDocumentsPerYear.value * manualCost.value;
           });
 
-          // Now additional documents are absolute per year (not per Mitarbeiter)
           const additionalDocumentsCost = computed(() => {
             return additionalDocuments.value * solutionCostPerDocument.value;
           });
@@ -448,7 +444,7 @@
             updateBreakdownFromManualCost();
           });
 
-          // Initialize
+          // Init
           updateEmployeeCount();
 
           return {

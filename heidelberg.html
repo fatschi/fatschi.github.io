@@ -1,451 +1,508 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Heidelberg-Pass Statistik Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+              * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+              }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f5f5;
-            padding: 2rem;
-        }
+              body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  background-color: #f5f5f5;
+                  padding: 2rem;
+              }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+              .container {
+                  max-width: 1400px;
+                  margin: 0 auto;
+              }
 
-        .header {
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            background: white;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+              .header {
+                  margin-bottom: 2rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 2rem;
+                  background: white;
+                  padding: 2rem;
+                  border-radius: 0.5rem;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              }
 
-        .header-logo {
-            flex-shrink: 0;
-        }
+              .header-logo {
+                  flex-shrink: 0;
+              }
 
-        .header-logo img {
-            height: 70px;
-            width: auto;
-        }
+              .header-logo img {
+                  height: 70px;
+                  width: auto;
+              }
 
-        .header-text {
-            flex-grow: 1;
-        }
+              .header-text {
+                  flex-grow: 1;
+              }
 
-        .header h1 {
-            font-size: 2.5rem;
-            color: #9B1C62;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
+              .header h1 {
+                  font-size: 2.5rem;
+                  color: #9B1C62;
+                  margin-bottom: 0.5rem;
+                  font-weight: 600;
+              }
 
-        .header p {
-            color: #555555;
-            font-size: 1rem;
-        }
+              .header p {
+                  color: #555555;
+                  font-size: 1rem;
+              }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 1rem;
-        }
+              .grid {
+                  display: grid;
+                  grid-template-columns: repeat(6, 1fr);
+                  gap: 1rem;
+              }
 
-        .stat-card {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-            border-left: 4px solid #9B1C62;
-            grid-column: span 2;
-        }
+              .kpi-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1rem;
+          margin-bottom: 1rem;
+      }
 
-        .stat-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
+              .stat-card {
+                  background: white;
+                  border-radius: 0.5rem;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  padding: 1.5rem;
+                  border-left: 4px solid #9B1C62;
+                  grid-column: span 2;
+              }
 
-        .stat-card-title {
-            color: #6b7280;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
+              .stat-card-header {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-start;
+              }
 
-        .stat-card-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #1f2937;
-            margin-top: 0.5rem;
-        }
+              .stat-card-title {
+                  color: #6b7280;
+                  font-size: 0.875rem;
+                  font-weight: 500;
+              }
 
-        .stat-card-trend {
-            color: #10b981;
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
+              .stat-card-value {
+                  font-size: 2rem;
+                  font-weight: bold;
+                  color: #1f2937;
+                  margin-top: 0.5rem;
+              }
 
-        .stat-card-icon {
-            background: #F5E6EF;
-            padding: 0.75rem;
-            border-radius: 9999px;
-        }
+              .stat-card-trend {
+                  color: #10b981;
+                  font-size: 0.875rem;
+                  margin-top: 0.5rem;
+              }
 
-        .chart-card {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-        }
+              .stat-card-icon {
+                  background: #F5E6EF;
+                  padding: 0.75rem;
+                  border-radius: 9999px;
+              }
 
-        .chart-card h2 {
-            font-size: 1.25rem;
-            color: #9B1C62;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
+              .chart-card {
+                  background: white;
+                  border-radius: 0.5rem;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  padding: 1.5rem;
+              }
 
-        .chart-container {
-            position: relative;
-            height: 280px;
-        }
+              .chart-card h2 {
+                  font-size: 1.25rem;
+                  color: #9B1C62;
+                  margin-bottom: 1rem;
+                  font-weight: 600;
+              }
 
-        .legend {
-            margin-top: 1rem;
-        }
+              .chart-container {
+                  position: relative;
+                  height: 280px;
+              }
 
-        .legend-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.75rem;
-            padding: 0.25rem 0;
-        }
+              .legend {
+                  margin-top: 1rem;
+              }
 
-        .legend-label {
-            display: flex;
-            align-items: center;
-            color: #374151;
-        }
+              .legend-item {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-size: 0.75rem;
+                  padding: 0.25rem 0;
+              }
 
-        .legend-color {
-            width: 0.5rem;
-            height: 0.5rem;
-            border-radius: 9999px;
-            margin-right: 0.5rem;
-        }
+              .legend-label {
+                  display: flex;
+                  align-items: center;
+                  color: #374151;
+              }
 
-        .legend-value {
-            font-weight: 600;
-            color: #1f2937;
-        }
+              .legend-color {
+                  width: 0.5rem;
+                  height: 0.5rem;
+                  border-radius: 9999px;
+                  margin-right: 0.5rem;
+              }
 
-        .col-span-2 { grid-column: span 2; }
-        .col-span-3 { grid-column: span 3; }
-        .col-span-6 { grid-column: span 6; }
-        .row-span-2 { grid-row: span 2; }
-        .row-span-3 { grid-row: span 3; }
+              .legend-value {
+                  font-weight: 600;
+                  color: #1f2937;
+              }
 
-        table {
-            width: 100%;
-            font-size: 0.875rem;
-            border-collapse: collapse;
-            margin-top: 1.5rem;
-        }
+              .col-span-2 { grid-column: span 2; }
+              .col-span-3 { grid-column: span 3; }
+              .col-span-6 { grid-column: span 6; }
+              .row-span-2 { grid-row: span 2; }
+              .row-span-3 { grid-row: span 3; }
 
-        thead {
-            background-color: #f3f4f6;
-            border-bottom: 2px solid #e5e7eb;
-        }
+              table {
+                  width: 100%;
+                  font-size: 0.875rem;
+                  border-collapse: collapse;
+                  margin-top: 1.5rem;
+              }
 
-        th {
-            padding: 0.75rem;
-            font-weight: 600;
-            text-align: left;
-        }
+              thead {
+                  background-color: #f3f4f6;
+                  border-bottom: 2px solid #e5e7eb;
+              }
 
-        th.text-right {
-            text-align: right;
-        }
+              th {
+                  padding: 0.75rem;
+                  font-weight: 600;
+                  text-align: left;
+              }
 
-        td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #f3f4f6;
-        }
+              th.text-right {
+                  text-align: right;
+              }
 
-        td.text-right {
-            text-align: right;
-        }
+              td {
+                  padding: 0.75rem;
+                  border-bottom: 1px solid #f3f4f6;
+              }
 
-        tbody tr:hover {
-            background-color: #f9fafb;
-        }
+              td.text-right {
+                  text-align: right;
+              }
 
-        .font-medium {
-            font-weight: 500;
-        }
+              tbody tr:hover {
+                  background-color: #f9fafb;
+              }
 
-        .text-gray-700 {
-            color: #374151;
-        }
+              .font-medium {
+                  font-weight: 500;
+              }
 
-        .text-gray-600 {
-            color: #4b5563;
-        }
+              .text-gray-700 {
+                  color: #374151;
+              }
 
-        svg {
-            color: #9B1C62;
-        }
+              .text-gray-600 {
+                  color: #4b5563;
+              }
+
+              svg {
+                  color: #9B1C62;
+              }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <div class="header-logo">
-                <img src="https://getvectorlogo.com/wp-content/uploads/2019/06/stadt-heidelberg-vector-logo.png" alt="Heidelberg Logo">
+      <div class="header">
+        <div class="header-logo">
+          <img
+            src="https://getvectorlogo.com/wp-content/uploads/2019/06/stadt-heidelberg-vector-logo.png"
+            alt="Heidelberg Logo"
+          />
+        </div>
+        <div class="header-text">
+          <h1>Heidelberg-Pass Dashboard</h1>
+          <p>Statistiken zur Nutzung und Verteilung</p>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div>
+              <p class="stat-card-title">Aktive Pässe</p>
+              <h3 class="stat-card-value">5.220</h3>
+              <p class="stat-card-trend">↑ +8% zum Vormonat</p>
             </div>
-            <div class="header-text">
-                <h1>Heidelberg-Pass Dashboard</h1>
-                <p>Statistiken zur Nutzung und Verteilung</p>
+            <div class="stat-card-icon">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
             </div>
+          </div>
         </div>
 
-        <div class="grid">
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div>
-                        <p class="stat-card-title">Aktive Pässe</p>
-                        <h3 class="stat-card-value">5.220</h3>
-                        <p class="stat-card-trend">↑ +8% zum Vormonat</p>
-                    </div>
-                    <div class="stat-card-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </div>
-                </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div>
+              <p class="stat-card-title">Nutzungen (Monat)</p>
+              <h3 class="stat-card-value">4.900</h3>
+              <p class="stat-card-trend">↑ +6% zum Vormonat</p>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div>
-                        <p class="stat-card-title">Nutzungen (Monat)</p>
-                        <h3 class="stat-card-value">4.900</h3>
-                        <p class="stat-card-trend">↑ +6% zum Vormonat</p>
-                    </div>
-                    <div class="stat-card-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
-                        </svg>
-                    </div>
-                </div>
+            <div class="stat-card-icon">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
             </div>
-
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div>
-                        <p class="stat-card-title">Standorte</p>
-                        <h3 class="stat-card-value">48</h3>
-                    </div>
-                    <div class="stat-card-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                            <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="chart-card col-span-3 row-span-2">
-                <h2>Nutzung nach Orten</h2>
-                <div class="chart-container">
-                    <canvas id="pieChart"></canvas>
-                </div>
-                <div class="legend" id="pieLegend"></div>
-            </div>
-
-            <div class="chart-card col-span-3 row-span-2">
-                <h2>Verteilung nach Postleitzahlen</h2>
-                <div class="chart-container">
-                    <canvas id="plzChart"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-card col-span-6 row-span-2">
-                <h2>Nutzungsentwicklung</h2>
-                <div class="chart-container">
-                    <canvas id="barChart"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-card col-span-6">
-                <h2>Detaillierte PLZ-Übersicht</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>PLZ</th>
-                            <th>Stadtteil</th>
-                            <th class="text-right">Anzahl Pässe</th>
-                            <th class="text-right">Anteil</th>
-                        </tr>
-                    </thead>
-                    <tbody id="plzTable"></tbody>
-                </table>
-            </div>
+          </div>
         </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div>
+              <p class="stat-card-title">Standorte</p>
+              <h3 class="stat-card-value">48</h3>
+            </div>
+            <div class="stat-card-icon">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div>
+              <p class="stat-card-title">Einsätze pro Person (Monat)</p>
+              <h3 class="stat-card-value">0,94</h3>
+              <p class="stat-card-trend">↔ stabil zum Vormonat</p>
+            </div>
+            <div class="stat-card-icon">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19h16" />
+                <path d="M8 19V9" />
+                <path d="M12 19V5" />
+                <path d="M16 19V12" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="chart-card col-span-3 row-span-2">
+          <h2>Nutzung nach Orten</h2>
+          <div class="chart-container">
+            <canvas id="pieChart"></canvas>
+          </div>
+          <div class="legend" id="pieLegend"></div>
+        </div>
+
+        <div class="chart-card col-span-3 row-span-2">
+          <h2>Verteilung nach Postleitzahlen</h2>
+          <div class="chart-container">
+            <canvas id="plzChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-span-6 row-span-2">
+          <h2>Nutzungsentwicklung</h2>
+          <div class="chart-container">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-span-6">
+          <h2>Detaillierte PLZ-Übersicht</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>PLZ</th>
+                <th>Stadtteil</th>
+                <th class="text-right">Anzahl Pässe</th>
+                <th class="text-right">Anteil</th>
+              </tr>
+            </thead>
+            <tbody id="plzTable"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <script>
-        var COLORS = ['#9B1C62', '#C4267D', '#D63384', '#E65C9B', '#F285B2', '#FFADD2'];
+      var COLORS = ['#9B1C62', '#C4267D', '#D63384', '#E65C9B', '#F285B2', '#FFADD2'];
 
-        var locationData = [
-            { name: 'Kinos', count: 1580, percentage: 28 },
-            { name: 'Zoo Heidelberg', count: 1245, percentage: 22 },
-            { name: 'Schwimmbäder', count: 890, percentage: 16 },
-            { name: 'Museen', count: 720, percentage: 13 },
-            { name: 'Theater', count: 650, percentage: 12 },
-            { name: 'Stadtbücherei', count: 520, percentage: 9 }
-        ];
+      var locationData = [
+          { name: 'Kinos', count: 1580, percentage: 28 },
+          { name: 'Zoo Heidelberg', count: 1245, percentage: 22 },
+          { name: 'Schwimmbäder', count: 890, percentage: 16 },
+          { name: 'Museen', count: 720, percentage: 13 },
+          { name: 'Theater', count: 650, percentage: 12 },
+          { name: 'Stadtbücherei', count: 520, percentage: 9 }
+      ];
 
-        var plzData = [
-            { plz: '69115', stadtteil: 'Altstadt', count: 580 },
-            { plz: '69117', stadtteil: 'Bergheim', count: 720 },
-            { plz: '69118', stadtteil: 'Weststadt', count: 650 },
-            { plz: '69120', stadtteil: 'Neuenheim', count: 490 },
-            { plz: '69121', stadtteil: 'Handschuhsheim', count: 540 },
-            { plz: '69123', stadtteil: 'Wieblingen', count: 610 },
-            { plz: '69124', stadtteil: 'Kirchheim', count: 780 },
-            { plz: '69126', stadtteil: 'Rohrbach', count: 850 }
-        ];
+      var plzData = [
+          { plz: '69115', stadtteil: 'Altstadt', count: 580 },
+          { plz: '69117', stadtteil: 'Bergheim', count: 720 },
+          { plz: '69118', stadtteil: 'Weststadt', count: 650 },
+          { plz: '69120', stadtteil: 'Neuenheim', count: 490 },
+          { plz: '69121', stadtteil: 'Handschuhsheim', count: 540 },
+          { plz: '69123', stadtteil: 'Wieblingen', count: 610 },
+          { plz: '69124', stadtteil: 'Kirchheim', count: 780 },
+          { plz: '69126', stadtteil: 'Rohrbach', count: 850 }
+      ];
 
-        var timelineData = [
-            { monat: 'Mai', nutzungen: 4200 },
-            { monat: 'Jun', nutzungen: 4800 },
-            { monat: 'Jul', nutzungen: 5400 },
-            { monat: 'Aug', nutzungen: 5100 },
-            { monat: 'Sep', nutzungen: 4600 },
-            { monat: 'Okt', nutzungen: 4900 }
-        ];
+      var timelineData = [
+          { monat: 'Mai', nutzungen: 4200 },
+          { monat: 'Jun', nutzungen: 4800 },
+          { monat: 'Jul', nutzungen: 5400 },
+          { monat: 'Aug', nutzungen: 5100 },
+          { monat: 'Sep', nutzungen: 4600 },
+          { monat: 'Okt', nutzungen: 4900 }
+      ];
 
-        new Chart(document.getElementById('pieChart'), {
-            type: 'pie',
-            data: {
-                labels: locationData.map(function(d) { return d.name; }),
-                datasets: [{
-                    data: locationData.map(function(d) { return d.count; }),
-                    backgroundColor: COLORS
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
+      new Chart(document.getElementById('pieChart'), {
+          type: 'pie',
+          data: {
+              labels: locationData.map(function(d) { return d.name; }),
+              datasets: [{
+                  data: locationData.map(function(d) { return d.count; }),
+                  backgroundColor: COLORS
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false
+                  }
+              }
+          }
+      });
 
-        var pieLegend = document.getElementById('pieLegend');
-        locationData.forEach(function(item, index) {
-            var div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = '<div class="legend-label"><div class="legend-color" style="background-color: ' + COLORS[index] + '"></div><span>' + item.name + '</span></div><span class="legend-value">' + item.count + '</span>';
-            pieLegend.appendChild(div);
-        });
+      var pieLegend = document.getElementById('pieLegend');
+      locationData.forEach(function(item, index) {
+          var div = document.createElement('div');
+          div.className = 'legend-item';
+          div.innerHTML = '<div class="legend-label"><div class="legend-color" style="background-color: ' + COLORS[index] + '"></div><span>' + item.name + '</span></div><span class="legend-value">' + item.count + '</span>';
+          pieLegend.appendChild(div);
+      });
 
-        new Chart(document.getElementById('plzChart'), {
-            type: 'bar',
-            data: {
-                labels: plzData.map(function(d) { return d.plz; }),
-                datasets: [{
-                    label: 'Anzahl Pässe',
-                    data: plzData.map(function(d) { return d.count; }),
-                    backgroundColor: '#9B1C62',
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                var index = context[0].dataIndex;
-                                return plzData[index].plz + ' - ' + plzData[index].stadtteil;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+      new Chart(document.getElementById('plzChart'), {
+          type: 'bar',
+          data: {
+              labels: plzData.map(function(d) { return d.plz; }),
+              datasets: [{
+                  label: 'Anzahl Pässe',
+                  data: plzData.map(function(d) { return d.count; }),
+                  backgroundColor: '#9B1C62',
+                  borderRadius: 6
+              }]
+          },
+          options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false
+                  },
+                  tooltip: {
+                      callbacks: {
+                          title: function(context) {
+                              var index = context[0].dataIndex;
+                              return plzData[index].plz + ' - ' + plzData[index].stadtteil;
+                          }
+                      }
+                  }
+              },
+              scales: {
+                  x: {
+                      beginAtZero: true
+                  }
+              }
+          }
+      });
 
-        new Chart(document.getElementById('barChart'), {
-            type: 'bar',
-            data: {
-                labels: timelineData.map(function(d) { return d.monat; }),
-                datasets: [{
-                    label: 'Nutzungen',
-                    data: timelineData.map(function(d) { return d.nutzungen; }),
-                    backgroundColor: '#C4267D',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+      new Chart(document.getElementById('barChart'), {
+          type: 'bar',
+          data: {
+              labels: timelineData.map(function(d) { return d.monat; }),
+              datasets: [{
+                  label: 'Nutzungen',
+                  data: timelineData.map(function(d) { return d.nutzungen; }),
+                  backgroundColor: '#C4267D',
+                  borderRadius: 8
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: true
+                  }
+              }
+          }
+      });
 
-        var plzTable = document.getElementById('plzTable');
-        var total = 5220;
-        plzData.forEach(function(item) {
-            var row = document.createElement('tr');
-            var percentage = ((item.count / total) * 100).toFixed(1);
-            row.innerHTML = '<td class="font-medium">' + item.plz + '</td><td class="text-gray-700">' + item.stadtteil + '</td><td class="text-right">' + item.count + '</td><td class="text-right text-gray-600">' + percentage + '%</td>';
-            plzTable.appendChild(row);
-        });
+      var plzTable = document.getElementById('plzTable');
+      var total = 5220;
+      plzData.forEach(function(item) {
+          var row = document.createElement('tr');
+          var percentage = ((item.count / total) * 100).toFixed(1);
+          row.innerHTML = '<td class="font-medium">' + item.plz + '</td><td class="text-gray-700">' + item.stadtteil + '</td><td class="text-right">' + item.count + '</td><td class="text-right text-gray-600">' + percentage + '%</td>';
+          plzTable.appendChild(row);
+      });
     </script>
-</body>
+  </body>
 </html>

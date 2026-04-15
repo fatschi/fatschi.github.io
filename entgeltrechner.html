@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERA-Leistungsbeurteilung – M+E BW</title>
+
+  <script id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-libs="sap.m,sap.ui.layout,sap.f,sap.ui.core"
+    data-sap-ui-compatVersion="edge"
+    data-sap-ui-async="false"
+    data-sap-ui-frameOptions="allow"
+  ></script>
+
+  <style>
+    html, body, #content { margin: 0; padding: 0; height: 100%; }
+    body.sapUiBody { visibility: hidden; }
+    body.sapUiBody.era-ready { visibility: visible; }
+    .eraPageLayout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .eraHeaderArea {
+      padding: 0.75rem 1rem 0;
+      box-sizing: border-box;
+    }
+    .eraHeaderTitleRow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.5rem 0 0.75rem;
+    }
+    .eraHeaderAttrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+    .eraMainPrimary {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: calc(100% - 25rem);
+    }
+    .eraMainSidebar {
+      flex: 0 0 24rem;
+      width: 24rem;
+      max-width: 24rem;
+      margin-left: 1rem;
+    }
+    @media (max-width: 1100px) {
+      .eraMainPrimary {
+        width: 100%;
+      }
+      .eraMainSidebar {
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+      }
+    }
+
+    /* ── Beurteilungstabelle ── */
+    .eraTable { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .eraTable th, .eraTable td {
+      border: 1px solid var(--sapList_BorderColor, #e0e0e0);
+      padding: 8px 10px; vertical-align: top;
+    }
+    .eraTable thead th {
+      background: var(--sapList_HeaderBackground, #f5f5f5);
+      font-weight: 700; text-align: center;
+      position: relative;
+    }
+    .eraTable thead th.eraBezug { border-top: 3px solid var(--sapBrandColor, #0070f2); }
+    .eraTable thead th:first-child { text-align: left; width: 190px; }
+    .eraGrade  { font-size: 1rem; font-weight: 700; display: block; }
+    .eraPct    { font-size: 0.75rem; font-weight: 600; color: var(--sapBrandColor, #0070f2); display: block; margin: 2px 0; }
+    .eraHDesc  { font-size: 0.6875rem; color: var(--sapContent_LabelColor, #6a6d70); line-height: 1.3; }
+    .eraTable tbody tr:hover td { background: var(--sapList_HoverBackground, #eaf3fb); }
+
+    /* Kriterium-Zelle */
+    .eraCritName   { font-weight: 700; color: var(--sapTextColor, #32363a); }
+    .eraCritWeight {
+      display: inline-block; margin-top: 4px;
+      font-size: 0.6875rem; font-weight: 600;
+      background: var(--sapInformativeColor, #0057a3); color: #fff;
+      padding: 1px 7px; border-radius: 0.5rem;
+    }
+    .eraCritDesc { font-size: 0.6875rem; color: var(--sapContent_LabelColor, #6a6d70); margin-top: 4px; line-height: 1.3; }
+
+    /* Auswahl-Zelle */
+    .eraCell {
+      text-align: center; cursor: pointer; transition: background 0.12s;
+      vertical-align: top;
+    }
+    .eraCell:hover { background: var(--sapList_HoverBackground, #eaf3fb); }
+    .eraCell.sel   {
+      background: var(--sapBrandColor, #0070f2) !important;
+    }
+    .eraCell.sel .eraCellDesc { color: #fff !important; }
+    .eraCell.sel .eraRing  { border-color: #fff; }
+    .eraCell.sel .eraDot   { opacity: 1; background: #fff; }
+
+    .eraCellInner { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 2px; }
+    .eraRing {
+      flex-shrink: 0;
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--sapField_BorderColor, #a9a9a9);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.12s;
+    }
+    .eraDot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--sapBrandColor, #0070f2); opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .eraCellDesc { font-size: 0.6875rem; color: var(--sapContent_LabelColor, #6a6d70); line-height: 1.3; }
+
+    /* ── Sidebar KPIs ── */
+    .eraKpiGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; padding: 0.75rem; }
+    .eraKpi { background: var(--sapList_Background, #f5f5f5); border-radius: 6px; padding: 0.625rem 0.75rem; }
+    .eraKpiLbl { font-size: 0.75rem; color: var(--sapContent_LabelColor, #6a6d70); margin-bottom: 2px; }
+    .eraKpiVal { font-size: 1.2rem; font-weight: 700; color: var(--sapTextColor, #32363a); }
+    .eraKpiVal.brand    { color: var(--sapBrandColor, #0070f2); }
+    .eraKpiVal.positive { color: var(--sapPositiveColor, #188918); }
+    .eraKpiSub { font-size: 0.6875rem; color: var(--sapContent_LabelColor, #6a6d70); margin-top: 2px; }
+    .eraKpiSub.positive { color: var(--sapPositiveColor, #188918); font-weight: 600; }
+
+    .eraGesamtRow {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem; border-top: 2px solid var(--sapList_BorderColor, #d9d9d9);
+    }
+    .eraGesamtLbl { font-size: 0.75rem; color: var(--sapContent_LabelColor, #6a6d70); }
+    .eraGesamtVal { font-size: 1.4rem; font-weight: 700; color: var(--sapTextColor, #32363a); }
+
+    .eraBadge {
+      font-size: 0.8125rem; font-weight: 700; padding: 4px 14px;
+      border-radius: 3px; border: 1px solid var(--sapList_BorderColor, #d9d9d9);
+      background: var(--sapList_Background, #e8e8e8);
+      color: var(--sapContent_LabelColor, #6a6d70);
+      transition: all 0.25s;
+    }
+    .eraBadge.pos { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+    .eraBadge.neu { background: #fff8e1; color: #7a5900; border-color: #ffd54f; }
+    .eraBadge.neg { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+
+    /* Progress */
+    .eraProgWrap { padding: 0 0.75rem 0.75rem; }
+    .eraProgHeader { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sapContent_LabelColor, #6a6d70); margin-bottom: 5px; }
+    .eraProgTrack { height: 8px; background: var(--sapField_Background, #e8e8e8); border-radius: 4px; overflow: hidden; position: relative; }
+    .eraProgFill  { height: 100%; background: var(--sapBrandColor, #0070f2); border-radius: 4px; transition: width 0.4s ease; }
+    .eraProgAvg   { position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: var(--sapWarningColor, #e9730c); }
+    .eraProgTicks { display: flex; justify-content: space-between; font-size: 0.625rem; color: #a0a0a0; margin-top: 3px; }
+
+    /* Übersicht */
+    .eraOvItem {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px; border-bottom: 1px solid var(--sapList_BorderColor, #f0f0f0);
+      font-size: 0.75rem;
+    }
+    .eraOvItem:last-child { border-bottom: none; }
+    .eraOvName  { flex: 1; color: var(--sapTextColor, #32363a); }
+    .eraOvBar   { width: 60px; }
+    .eraOvTrack { height: 4px; background: var(--sapField_Background, #e8e8e8); border-radius: 2px; overflow: hidden; }
+    .eraOvFill  { height: 100%; background: var(--sapBrandColor, #0070f2); border-radius: 2px; transition: width 0.35s; }
+    .eraOvBadge {
+      font-size: 0.6875rem; font-weight: 700; min-width: 26px; text-align: center;
+      padding: 1px 7px; border-radius: 3px;
+      border: 1px solid var(--sapList_BorderColor, #d9d9d9);
+      color: var(--sapContent_LabelColor, #6a6d70);
+      background: var(--sapList_Background, #f5f5f5);
+      transition: all 0.2s;
+    }
+    .eraOvBadge.sel { background: var(--sapBrandColor, #0070f2); color: #fff; border-color: var(--sapBrandColor, #0070f2); }
+
+    /* ERA Info */
+    .eraInfoBody { padding: 0.375rem 0.75rem; }
+    .eraInfoRow  {
+      display: flex; justify-content: space-between;
+      font-size: 0.75rem; padding: 5px 0;
+      border-bottom: 1px solid var(--sapList_BorderColor, #f0f0f0);
+    }
+    .eraInfoRow:last-child { border-bottom: none; }
+    .eraInfoKey { color: var(--sapContent_LabelColor, #6a6d70); }
+    .eraInfoVal { font-weight: 600; color: var(--sapTextColor, #32363a); }
+
+    /* Status dot */
+    .eraStatusDot { width: 9px; height: 9px; border-radius: 50%; background: #c0c0c0; flex-shrink: 0; transition: background 0.3s; }
+    .eraStatusDot.on { background: var(--sapPositiveColor, #188918); }
+
+    /* MA-Formular-Header */
+    .eraMaBar {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      border-bottom: 1px solid var(--sapList_BorderColor, #e0e0e0);
+      background: var(--sapList_Background, #fafafa);
+    }
+    .eraMaCell { padding: 10px 14px; border-right: 1px solid var(--sapList_BorderColor, #e0e0e0); }
+    .eraMaCell:last-child { border-right: none; }
+    .eraMaLbl  { font-size: 0.6875rem; color: var(--sapContent_LabelColor, #6a6d70); margin-bottom: 3px; }
+    .eraMaVal  { font-size: 0.8125rem; font-weight: 600; color: var(--sapTextColor, #32363a); }
+    .eraMaSel  {
+      font-size: 0.8125rem; font-weight: 600; color: var(--sapTextColor, #32363a);
+      border: 1px solid var(--sapField_BorderColor, #d9d9d9);
+      border-radius: 3px; padding: 2px 6px;
+      background: var(--sapField_Background, #fff);
+      font-family: inherit; cursor: pointer; width: 100%;
+    }
+    .eraFooterBar {
+      margin: 0 1rem 1rem;
+    }
+  </style>
+
+  <script>
+    // Der korrekte Einstiegspunkt: erst wenn der Core + Libs geladen sind
+    sap.ui.getCore().attachInit(function () {
+      sap.ui.require([
+        "sap/m/VBox",
+        "sap/m/HBox",
+        "sap/m/Panel",
+        "sap/m/Title",
+        "sap/m/Button",
+        "sap/m/Text",
+        "sap/m/MessageStrip",
+        "sap/m/ObjectStatus",
+        "sap/m/Toolbar",
+        "sap/m/ToolbarSpacer",
+        "sap/m/ToolbarSeparator",
+        "sap/m/OverflowToolbar",
+        "sap/m/Breadcrumbs",
+        "sap/m/Link",
+        "sap/m/Avatar",
+        "sap/f/ShellBar",
+        "sap/ui/core/HTML",
+        "sap/ui/model/json/JSONModel"
+      ], function (
+        VBox, HBox, Panel, Title, Button, SapText,
+        MessageStrip, ObjectStatus, Toolbar, ToolbarSpacer, ToolbarSeparator, OverflowToolbar,
+        Breadcrumbs, Link, Avatar,
+        ShellBar,
+        HTML, JSONModel
+      ) {
+
+        /* ════════════════════════════════
+           ERA-Stammdaten
+        ════════════════════════════════ */
+        var EG = { 5:3296.11, 6:3481.17, 7:3703.35, 8:3962.65, 9:4221.94, 10:4499.28 };
+        var GRADES   = ["A","B","C","D","E"];
+        var GRADE_PCT = [0, 7.5, 15, 22.5, 30];
+        var sel = {};
+        var egKey = 5;
+
+        var CRITERIA = [
+          { id:"effizienz",     name:"Effizienz",                 max:25, wt:"25 Pkt.",
+            desc:"Arbeitsmenge und -güte im Verhältnis zum Zeitaufwand",
+            grades:["Arbeitspensum und Qualität werden nicht erreicht; häufige Nacharbeit erforderlich",
+                    "Aufgaben werden im Allgemeinen in angemessener Zeit und Qualität erledigt",
+                    "Aufgaben werden stets in der erforderlichen Zeit und Qualität erbracht",
+                    "Überdurchschnittliche Leistungsmenge und -güte; Ressourcen besonders effizient genutzt",
+                    "Außergewöhnlich hohe Arbeitsleistung; Vorbild für das gesamte Team"] },
+          { id:"qualitaet",     name:"Qualität",                  max:25, wt:"25 Pkt.",
+            desc:"Sorgfalt, Fehlerquote, Einhaltung von Qualitätsstandards",
+            grades:["Häufige Fehler; Qualitätsstandards werden nicht eingehalten",
+                    "Qualitätsvorgaben werden im Allg. erfüllt; gelegentliche Nacharbeit",
+                    "Qualitätsvorgaben vollständig und konstant erfüllt; kaum Beanstandungen",
+                    "Qualität übertrifft die Anforderungen; Fehlerquote deutlich unter Durchschnitt",
+                    "Höchste Qualitätsstandards; Eigeninitiative zur kontinuierlichen Verbesserung"] },
+          { id:"flexibilitaet", name:"Flexibilität",              max:20, wt:"20 Pkt.",
+            desc:"Anpassungsfähigkeit, Bereitschaft zu Vertretung und neuen Aufgaben",
+            grades:["Kaum Bereitschaft zur Übernahme wechselnder Aufgaben oder Vertretung",
+                    "Vertretungsbereitschaft bei direkter Ansprache; Aufgabenwechsel möglich",
+                    "Zeigt Flexibilität beim Tätigkeitswechsel und in Vertretungssituationen",
+                    "Übernimmt aktiv neue Aufgaben; unterstützt das Team bei veränderten Anforderungen",
+                    "Außergewöhnliche Flexibilität; gestaltet Veränderungsprozesse aktiv mit"] },
+          { id:"verantwortung", name:"Verantwortliches Handeln",  max:20, wt:"20 Pkt.",
+            desc:"Zuverlässigkeit, Eigeninitiative, Einhaltung der Arbeitssicherheit",
+            grades:["Aufgaben selten eigenverantwortlich übernommen; Sicherheitsregeln teilw. missachtet",
+                    "Übernimmt Verantwortung bei klaren Vorgaben; hält Sicherheitsregeln im Allg. ein",
+                    "Handelt stets zuverlässig und eigenverantwortlich; Arbeitssicherheit vorbildlich",
+                    "Zeigt ausgeprägte Eigeninitiative; Verantwortung über den eigenen Bereich hinaus",
+                    "Herausragendes verantwortliches Handeln; identifiziert proaktiv Risiken"] },
+          { id:"kooperation",   name:"Kooperation",               max:10, wt:"10 Pkt.",
+            desc:"Teamarbeit, Kommunikation, betriebliches Zusammenwirken",
+            grades:["Zusammenarbeit mit Kollegen und angrenzenden Bereichen wenig konstruktiv",
+                    "Kooperiert bei Anforderung; Informationsweitergabe im Allg. sichergestellt",
+                    "Arbeitet aktiv und konstruktiv im Team; fördert Informationsfluss verlässlich",
+                    "Trägt erheblich zur Teamleistung bei; schlichtet Konflikte, fördert Zusammenhalt",
+                    "Vorbildliche Kooperation; vernetzt Bereiche, stärkt Teamkultur nachhaltig"] }
+        ];
+
+        /* ════════════════════════════════
+           Hilfs-Funktionen
+        ════════════════════════════════ */
+        function fmtEur(v) {
+          return v.toLocaleString("de-DE", { minimumFractionDigits:2, maximumFractionDigits:2 }) + " €";
+        }
+
+        function computeLZ() {
+          var max=0, wg=0, any=false;
+          CRITERIA.forEach(function(c) {
+            max += c.max;
+            if (sel[c.id] !== undefined) { wg += GRADE_PCT[sel[c.id]] * c.max; any = true; }
+          });
+          return any ? (wg / max) : null;
+        }
+
+        function dominantGrade() {
+          var tot=0, ws=0;
+          CRITERIA.forEach(function(c) {
+            if (sel[c.id] !== undefined) { ws += sel[c.id]*c.max; tot += c.max; }
+          });
+          return tot > 0 ? Math.round(ws/tot) : null;
+        }
+
+        /* ════════════════════════════════
+           DOM-Update
+        ════════════════════════════════ */
+        function updateUI() {
+          var lz = computeLZ();
+          var g  = dominantGrade();
+          var ge = EG[egKey];
+
+          // Grundentgelt immer aktuell
+          _set("kpi-ge", fmtEur(ge));
+
+          if (lz === null) {
+            _set("kpi-grade","—");  _set("kpi-lzpct","— %");
+            _set("kpi-lzeur","—");  _set("kpi-gesamt","—");
+            _set("kpi-diff","bitte beurteilen");
+            _cls("kpi-diff","eraKpiSub");
+            _set("era-badge","— %"); _cls("era-badge","eraBadge");
+            _set("era-hbadge","Keine Auswahl"); _cls("era-hbadge","eraBadge");
+            _style("era-progfill","width","0%");
+            _set("era-proglbl","0 %");
+            _cls("era-dot","eraStatusDot");
+            _set("era-ftpts","—");
+          } else {
+            var lzEur  = ge * (lz / 100);
+            var gesamt = ge + lzEur;
+            var ref    = ge * 0.15;
+            var dv     = lzEur - ref;
+            var gl     = g !== null ? GRADES[g] : "—";
+
+            _set("kpi-grade","Stufe " + gl);
+            _set("kpi-lzpct", lz.toFixed(1) + " %");
+            _set("kpi-lzeur", fmtEur(lzEur));
+            _set("kpi-gesamt", fmtEur(gesamt));
+            _set("kpi-diff", (dv>=0?"+":"") + fmtEur(dv) + " ggü. Ø");
+            _cls("kpi-diff", dv>=0 ? "eraKpiSub positive" : "eraKpiSub");
+
+            var pw = ((lz/30)*100).toFixed(1)+"%";
+            _style("era-progfill","width",pw);
+            _set("era-proglbl", lz.toFixed(1)+" %");
+            _cls("era-dot","eraStatusDot on");
+
+            var bc = lz>=15?"pos":lz>0?"neu":"neg";
+            _set("era-badge", lz.toFixed(1)+" %");
+            _cls("era-badge","eraBadge "+bc);
+            _set("era-hbadge","Stufe "+gl+" · "+lz.toFixed(1)+" %");
+            _cls("era-hbadge","eraBadge "+bc);
+
+            var totalPts=0;
+            CRITERIA.forEach(function(c){
+              if(sel[c.id]!==undefined) totalPts+=Math.round(c.max*(GRADE_PCT[sel[c.id]]/30));
+            });
+            _set("era-ftpts", totalPts+" / 100 Punkten");
+          }
+
+          // Übersicht-Bars
+          CRITERIA.forEach(function(c) {
+            var badge = document.getElementById("ov-b-"+c.id);
+            var fill  = document.getElementById("ov-f-"+c.id);
+            if (!badge || !fill) return;
+            if (sel[c.id] !== undefined) {
+              badge.textContent = GRADES[sel[c.id]];
+              badge.className   = "eraOvBadge sel";
+              fill.style.width  = (GRADE_PCT[sel[c.id]]/30*100).toFixed(0)+"%";
+            } else {
+              badge.textContent = "—";
+              badge.className   = "eraOvBadge";
+              fill.style.width  = "0%";
+            }
+          });
+        }
+
+        function _set(id, txt) { var el=document.getElementById(id); if(el) el.textContent=txt; }
+        function _cls(id, cn)  { var el=document.getElementById(id); if(el) el.className=cn; }
+        function _style(id,p,v){ var el=document.getElementById(id); if(el) el.style[p]=v; }
+
+        /* ════════════════════════════════
+           Zellenauswahl
+        ════════════════════════════════ */
+        window._eraClick = function(cid, gi) {
+          sel[cid] = gi;
+          CRITERIA.forEach(function(c) {
+            for (var i=0;i<5;i++) {
+              var cell = document.getElementById("ec-"+c.id+"-"+i);
+              if (!cell) continue;
+              var dot  = cell.querySelector(".eraDot");
+              if (c.id===cid) {
+                if (i===gi) { cell.classList.add("sel"); if(dot) dot.style.opacity="1"; }
+                else        { cell.classList.remove("sel"); if(dot) dot.style.opacity="0"; }
+              }
+            }
+          });
+          updateUI();
+        };
+
+        window._eraReset = function() {
+          sel = {};
+          CRITERIA.forEach(function(c){
+            for(var i=0;i<5;i++){
+              var cell=document.getElementById("ec-"+c.id+"-"+i);
+              if(cell){ cell.classList.remove("sel"); var d=cell.querySelector(".eraDot"); if(d) d.style.opacity="0"; }
+            }
+          });
+          updateUI();
+        };
+
+        window._eraEGChange = function(v) {
+          egKey = parseInt(v);
+          updateUI();
+        };
+
+        /* ════════════════════════════════
+           HTML-Bausteine
+        ════════════════════════════════ */
+        function buildTableHTML() {
+          var heads = [
+            { g:"A", pct:"0 %",    desc:"Leistung ist für eine Leistungszulage nicht ausreichend", bez:false },
+            { g:"B", pct:"7,5 %",  desc:"Leistung entspricht im Allgemeinen den Anforderungen",   bez:false },
+            { g:"C", pct:"15 %",   desc:"Leistung entspricht in vollem Umfang den Anforderungen", bez:true  },
+            { g:"D", pct:"22,5 %", desc:"Leistung übertrifft die Anforderungen erheblich",        bez:false },
+            { g:"E", pct:"30 %",   desc:"Leistung übertrifft die Anforderungen in hohem Maße",   bez:false }
+          ];
+
+          var h = '<table class="eraTable"><thead><tr>';
+          h += '<th style="width:190px">Beurteilungskriterium</th>';
+          heads.forEach(function(hd) {
+            h += '<th'+(hd.bez?' class="eraBezug"':'')+' style="width:calc((100%-190px)/5)">';
+            h += '<span class="eraGrade">'+hd.g+'</span>';
+            h += '<span class="eraPct">'+hd.pct+'</span>';
+            h += '<span class="eraHDesc">'+hd.desc+(hd.bez?' <em style="font-size:0.625rem;color:var(--sapBrandColor)">(Bezugsleistung)</em>':'')+'</span>';
+            h += '</th>';
+          });
+          h += '</tr></thead><tbody>';
+
+          CRITERIA.forEach(function(c) {
+            h += '<tr>';
+            h += '<td>';
+            h += '<div class="eraCritName">'+c.name+'</div>';
+            h += '<span class="eraCritWeight">'+c.wt+'</span>';
+            h += '<div class="eraCritDesc">'+c.desc+'</div>';
+            h += '</td>';
+            c.grades.forEach(function(desc, gi) {
+              h += '<td class="eraCell" id="ec-'+c.id+'-'+gi+'" onclick="_eraClick(\''+c.id+'\','+gi+')">';
+              h += '<div class="eraCellInner">';
+              h += '<div class="eraRing"><div class="eraDot"></div></div>';
+              h += '<div class="eraCellDesc">'+desc+'</div>';
+              h += '</div></td>';
+            });
+            h += '</tr>';
+          });
+
+          h += '</tbody></table>';
+          return h;
+        }
+
+        function buildMABarHTML() {
+          var egOpts = [5,6,7,8,9,10].map(function(k){
+            return '<option value="'+k+'"'+(k===egKey?' selected':'')+'>EG '+k+' ('+EG[k].toLocaleString("de-DE",{minimumFractionDigits:2})+'&nbsp;€)</option>';
+          }).join("");
+          return [
+            '<div class="eraMaBar">',
+            '  <div class="eraMaCell"><div class="eraMaLbl">Beschäftigte/r</div><div class="eraMaVal">Max Mustermann</div></div>',
+            '  <div class="eraMaCell"><div class="eraMaLbl">Entgeltgruppe (ERA-TV)</div>',
+            '    <select class="eraMaSel" onchange="_eraEGChange(this.value)">'+egOpts+'</select>',
+            '  </div>',
+            '  <div class="eraMaCell"><div class="eraMaLbl">Abteilung</div><div class="eraMaVal">Fertigung / Montage</div></div>',
+            '  <div class="eraMaCell"><div class="eraMaLbl">Beurteilender</div><div class="eraMaVal">Petra Müller (Meisterin)</div></div>',
+            '</div>'
+          ].join("\n");
+        }
+
+        function buildResultHTML() {
+          return [
+            '<div style="display:flex;align-items:center;gap:8px;padding:0.75rem 0.75rem 0.5rem">',
+            '  <div class="eraStatusDot" id="era-dot"></div>',
+            '  <span style="font-size:0.75rem;color:var(--sapContent_LabelColor)">ERA-TV M+E Baden-Württemberg · Stand: April 2026</span>',
+            '</div>',
+            '<div class="eraKpiGrid">',
+            '  <div class="eraKpi"><div class="eraKpiLbl">Leistungsstufe</div><div class="eraKpiVal brand" id="kpi-grade">—</div><div class="eraKpiSub">Stufe A–E</div></div>',
+            '  <div class="eraKpi"><div class="eraKpiLbl">Leistungszulage</div><div class="eraKpiVal brand" id="kpi-lzpct">— %</div><div class="eraKpiSub">Ø-Betrieb: 15 % (Stufe C)</div></div>',
+            '  <div class="eraKpi"><div class="eraKpiLbl">Grundentgelt</div><div class="eraKpiVal" id="kpi-ge">3.296,11 €</div><div class="eraKpiSub">35 Std./Woche</div></div>',
+            '  <div class="eraKpi"><div class="eraKpiLbl">Leistungsentgelt</div><div class="eraKpiVal positive" id="kpi-lzeur">—</div><div class="eraKpiSub positive" id="kpi-diff">bitte beurteilen</div></div>',
+            '</div>',
+            '<div class="eraGesamtRow">',
+            '  <div><div class="eraGesamtLbl">Gesamtentgelt (Grund + Leistung)</div><div class="eraGesamtVal" id="kpi-gesamt">—</div></div>',
+            '  <div class="eraBadge" id="era-badge">— %</div>',
+            '</div>',
+            '<div class="eraProgWrap">',
+            '  <div class="eraProgHeader"><span>Leistungszulage-Korridor</span><span id="era-proglbl">0 %</span></div>',
+            '  <div class="eraProgTrack">',
+            '    <div class="eraProgFill" id="era-progfill" style="width:0%"></div>',
+            '    <div class="eraProgAvg" title="Bezugsleistung Stufe C = 15 %"></div>',
+            '  </div>',
+            '  <div class="eraProgTicks"><span>A&nbsp;·&nbsp;0&nbsp;%</span><span>B&nbsp;·&nbsp;7,5&nbsp;%</span><span>C&nbsp;·&nbsp;15&nbsp;%</span><span>D&nbsp;·&nbsp;22,5&nbsp;%</span><span>E&nbsp;·&nbsp;30&nbsp;%</span></div>',
+            '</div>'
+          ].join("\n");
+        }
+
+        function buildOverviewHTML() {
+          var h = '<div>';
+          CRITERIA.forEach(function(c){
+            h += '<div class="eraOvItem">';
+            h += '<span class="eraOvName">'+c.name+'</span>';
+            h += '<div class="eraOvBar"><div class="eraOvTrack"><div class="eraOvFill" id="ov-f-'+c.id+'" style="width:0%"></div></div></div>';
+            h += '<span class="eraOvBadge" id="ov-b-'+c.id+'">—</span>';
+            h += '</div>';
+          });
+          h += '</div>';
+          return h;
+        }
+
+        function buildInfoHTML() {
+          var rows = [
+            ["Tarifvertrag",       "ERA-TV §17 Anlage 4"],
+            ["Tarifparteien",      "IG Metall / Südwestmetall"],
+            ["Entgeltmethode",     "Beurteilen"],
+            ["Beurteilungsstufen", "A – E (5 Stufen)"],
+            ["Ø-Betriebszulage",   "15 % (tariflich)"],
+            ["Entgeltgruppen BW",  "EG 1 – EG 17"],
+            ["Eckentgelt (EG 5)",  "3.296,11 € (ab 04/2026)"],
+            ["Arbeitszeit",        "35 Std./Woche"],
+            ["Mitbestimmung",      "Betriebsrat (§87 BetrVG)"],
+            ["Abschluss ERA-TV",   "11.11.2021"]
+          ];
+          var h = '<div class="eraInfoBody">';
+          rows.forEach(function(r){
+            h+='<div class="eraInfoRow"><span class="eraInfoKey">'+r[0]+'</span><span class="eraInfoVal">'+r[1]+'</span></div>';
+          });
+          h += '</div>';
+          return h;
+        }
+
+        /* ════════════════════════════════
+           UI5-Controls zusammenbauen
+        ════════════════════════════════ */
+
+        // Shell
+        var oShell = new ShellBar({
+          title: "ERA-Leistungsbeurteilung",
+          secondTitle: "M+E Industrie Baden-Württemberg",
+          profile: new Avatar({ initials:"HR", backgroundColor:"Accent6" })
+        });
+
+        // Breadcrumb
+        var oBreadcrumb = new Breadcrumbs({
+          links: [
+            new Link({ text:"Personalwesen" }),
+            new Link({ text:"Leistungsentgelt" })
+          ],
+          currentLocationText: "Beurteilungsbogen ERA-TV §17"
+        });
+
+        var oHeaderTitle = new HTML({
+          preferDOM: true,
+          content:
+            '<div class="eraHeaderTitleRow">' +
+              '<div>' +
+                '<div class="sapMTitle sapMTitleStyleAuto sapMTitleMaxWidth" style="font-size:1.5rem;font-weight:700;">Individuelle Leistungsbeurteilung – Entgeltmethode Beurteilen</div>' +
+                '<div style="margin-top:0.25rem;color:var(--sapContent_LabelColor,#6a6d70);font-size:0.875rem;">ERA Leistungsbeurteilung</div>' +
+              '</div>' +
+              '<div class="sapMObjStatus" style="white-space:nowrap;">' +
+                '<span class="sapMObjStatusTitle">Beurteilungszeitraum</span> ' +
+                '<span class="sapMObjStatusText sapMObjStatusInformation">01.01.2026 – 31.03.2026</span>' +
+              '</div>' +
+            '</div>'
+        });
+
+        var oHeaderAttrs = new HBox({
+          wrap: "Wrap",
+          items: [
+            new ObjectStatus({ title:"Tarifvertrag", text:"ERA-TV §17 Anlage 4" }),
+            new ObjectStatus({ title:"Tarifparteien", text:"IG Metall / Südwestmetall" }),
+            new ObjectStatus({ title:"Entgeltmethode", text:"Beurteilen" }),
+            new ObjectStatus({ title:"Ø-Leistungszulage", text:"15 % · Stufe C = Bezugsleistung", state:"Information" }),
+            new ObjectStatus({ title:"EG-Skala BW", text:"EG 1–17 · 35 Std./Woche" })
+          ]
+        }).addStyleClass("eraHeaderAttrs");
+
+        var oFooter = new OverflowToolbar({
+          content: [
+            new ToolbarSpacer(),
+            new SapText({ text:"Gesamtpunkte:" }),
+            new ObjectStatus({ id:"era-ftpts", text:"—", state:"Information" }),
+            new ToolbarSeparator(),
+            new Button({ text:"Zurücksetzen", type:"Default", press: function(){ window._eraReset(); } }),
+            new Button({ text:"Speichern", type:"Emphasized" })
+          ]
+        }).addStyleClass("eraFooterBar");
+
+        function buildMainContent(Panel,Title,Button,SapText,MessageStrip,
+                                  ObjectStatus,Toolbar,ToolbarSpacer,HTML) {
+          // Linke Spalte: Beurteilungsbogen
+          var oLeftPanel = new Panel({
+            headerToolbar: new Toolbar({
+              content: [
+                new Title({ text:"Beurteilungsbogen – Leistungsverhalten" }),
+                new ToolbarSpacer(),
+                new HTML({ content:'<div class="eraBadge" id="era-hbadge">Keine Auswahl</div>', preferDOM:true })
+              ]
+            }),
+            content: [
+              new MessageStrip({
+                text:"Gemäß ERA-TV §17 Anlage 4: Beurteilung anhand fünf tariflicher Kriterien. Betriebsdurchschnitt: 15 % Leistungszulage (Stufe C = tarifliche Bezugsleistung). Minderung des Leistungsentgelts frühestens 3 Monate nach Mitteilung.",
+                type:"Information", showIcon:true, showCloseButton:false
+              }).addStyleClass("sapUiSmallMarginBottom"),
+              new HTML({ content: buildMABarHTML(), preferDOM:true }),
+              new HTML({ content: buildTableHTML(), preferDOM:true }),
+              new MessageStrip({
+                text:"Hinweis (ERA-TV §17): Der/die Beschäftigte ist über das Beurteilungsergebnis zu informieren. Eine Verminderung ist frühestens 3 Monate nach Mitteilung möglich. Betriebsrat hat Einsichtsrecht.",
+                type:"Warning", showIcon:true, showCloseButton:false
+              }).addStyleClass("sapUiSmallMarginTop")
+            ]
+          });
+
+          // Rechte Spalte: Sidebar
+          var oResultPanel = new Panel({
+            headerToolbar: new Toolbar({ content:[ new Title({text:"Ergebnis Leistungsentgelt"}) ] }),
+            content:[ new HTML({ content: buildResultHTML(), preferDOM:true }) ]
+          }).addStyleClass("sapUiSmallMarginBottom");
+
+          var oOvPanel = new Panel({
+            headerToolbar: new Toolbar({ content:[ new Title({text:"Kriterien-Übersicht"}) ] }),
+            content:[ new HTML({ content: buildOverviewHTML(), preferDOM:true }) ]
+          }).addStyleClass("sapUiSmallMarginBottom");
+
+          var oInfoPanel = new Panel({
+            headerToolbar: new Toolbar({ content:[ new Title({text:"ERA-Tarifinfo M+E BW"}) ] }),
+            content:[ new HTML({ content: buildInfoHTML(), preferDOM:true }) ]
+          });
+
+          var oSidebar = new VBox({
+            items:[ oResultPanel, oOvPanel, oInfoPanel ],
+            renderType:"Bare"
+          });
+
+          oLeftPanel.addStyleClass("eraMainPrimary");
+          oSidebar.addStyleClass("eraMainSidebar");
+
+          return new HBox({
+            width: "100%",
+            wrap: "NoWrap",
+            items: [ oLeftPanel, oSidebar ]
+          }).addStyleClass("sapUiContentPadding");
+        }
+
+        /* ════════════════════════════════
+           App rendern
+        ════════════════════════════════ */
+        var oRoot = new VBox({
+          renderType: "Bare",
+          items: [
+            oShell,
+            new VBox({
+              renderType: "Bare",
+              items: [
+                new VBox({
+                  renderType: "Bare",
+                  items: [ oBreadcrumb, oHeaderTitle, oHeaderAttrs ]
+                }).addStyleClass("eraHeaderArea"),
+                buildMainContent(Panel, Title, Button, SapText, MessageStrip,
+                                 ObjectStatus, Toolbar, ToolbarSpacer, HTML),
+                oFooter
+              ]
+            }).addStyleClass("eraPageLayout sapUiSizeCompact")
+          ]
+        });
+
+        oRoot.placeAt("content");
+        updateUI();
+        document.body.classList.add("era-ready");
+
+      }); // sap.ui.require
+    }); // attachInit
+  </script>
+</head>
+<body class="sapUiBody">
+  <div id="content"></div>
+</body>
+</html>
